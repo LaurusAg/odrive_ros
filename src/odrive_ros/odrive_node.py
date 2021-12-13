@@ -69,7 +69,7 @@ class ODriveNode(object):
     encoder_counts_per_rev = None
     m_s_to_value = 1.0
     axis_for_right = 0
-    encoder_cpr = 4096
+    encoder_cpr = 2400
     
     # Startup parameters
     connect_on_startup = True
@@ -94,7 +94,7 @@ class ODriveNode(object):
         self.calibrate_on_startup = get_param('~calibrate_on_startup', False)
         self.engage_on_startup    = get_param('~engage_on_startup', False)
         
-        self.has_preroll     = get_param('~use_preroll', True)
+        self.has_preroll     = get_param('~use_preroll', False)
                 
         self.publish_current = get_param('~publish_current', True)
         self.publish_raw_odom =get_param('~publish_raw_odom', True)
@@ -271,7 +271,6 @@ class ODriveNode(object):
 
                 if self.calibrate_on_startup:
                     self.driver.calibrate()
-                    self.driver.preroll(wait=True)
 
                 if self.engage_on_startup:
                     if not self.driver.engaged():
@@ -379,7 +378,7 @@ class ODriveNode(object):
         if self.fast_timer_comms_active and not self.command_queue.empty():
             # check to see if we're initialised and engaged motor
             try:
-                if not self.driver.has_prerolled(): #ensure_prerolled():
+                if self.has_preroll and not self.driver.has_prerolled(): #ensure_prerolled():
                     rospy.logwarn_throttle(5.0, "ODrive has not been prerolled, ignoring drive command.")
                     motor_command = self.command_queue.get_nowait()
                     return

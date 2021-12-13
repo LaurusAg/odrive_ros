@@ -26,7 +26,7 @@ class ODriveFailure(Exception):
 
 class ODriveInterfaceAPI(object):
     driver = None
-    encoder_cpr = 4096
+    encoder_cpr = 2400
     right_axis = None
     left_axis = None
     connected = False

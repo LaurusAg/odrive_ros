@@ -1,0 +1,6 @@
+Diferencias entre las 2 ramas del repo odrive_ros
+_Compatibilidad entre python y python3. (Queue/queue, ruta includes)
+_Manejo del sentido de los ejes
+_Exceptiones comentadas
+_Preroll (a testear)(cuidar el if statement)
+_Publicación periódica del status
