@@ -494,7 +494,7 @@ class ODriveNode(object):
         if not self.driver:
             rospy.logerr("Not connected.")
             return (False, "Not connected.")
-        if not self.driver.has_prerolled():
+        if self.has_preroll and not self.driver.has_prerolled():
             return (False, "Not prerolled.")
         if not self.driver.engage():
             return (False, "Failed to engage motor.")
