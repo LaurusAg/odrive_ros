@@ -72,7 +72,7 @@ class ODriveNode(object):
     encoder_cpr = 4096
     
     # Startup parameters
-    connect_on_startup = False
+    connect_on_startup = True
     calibrate_on_startup = False
     engage_on_startup = False
     
@@ -90,9 +90,9 @@ class ODriveNode(object):
         self.wheel_track = float(get_param('~wheel_track', 0.285)) # m, distance between wheel centres
         self.tyre_circumference = float(get_param('~tyre_circumference', 0.341)) # used to translate velocity commands in m/s into motor rpm
         
-        self.connect_on_startup   = get_param('~connect_on_startup', False)
-        #self.calibrate_on_startup = get_param('~calibrate_on_startup', False)
-        #self.engage_on_startup    = get_param('~engage_on_startup', False)
+        self.connect_on_startup   = get_param('~connect_on_startup', True)
+        self.calibrate_on_startup = get_param('~calibrate_on_startup', False)
+        self.engage_on_startup    = get_param('~engage_on_startup', False)
         
         self.has_preroll     = get_param('~use_preroll', True)
                 
@@ -262,12 +262,20 @@ class ODriveNode(object):
             
             if not self.driver:
                 if not self.connect_on_startup:
-                    #rospy.loginfo("ODrive node started, but not connected.")
+                    rospy.loginfo("ODrive node started, but not connected.")
                     continue
                 
                 if not self.connect_driver(None)[0]:
                     rospy.logerr("Failed to connect.") # TODO: can we check for timeout here?
                     continue
+
+                if self.calibrate_on_startup:
+                    self.driver.calibrate()
+                    self.driver.preroll(wait=True)
+
+                if self.engage_on_startup:
+                    if not self.driver.engaged():
+                        self.driver.engage()
                     
                 if self.publish_diagnostics:
                     self.diagnostic_updater.setHardwareID(self.driver.get_version_string())
@@ -438,8 +446,8 @@ class ODriveNode(object):
         self.m_s_to_value = self.driver.encoder_cpr/self.tyre_circumference
         
         if self.publish_odom:
-            self.old_pos_l = self.driver.left_axis.encoder.pos_cpr
-            self.old_pos_r = self.driver.right_axis.encoder.pos_cpr
+            self.old_pos_l = self.driver.left_axis.encoder.pos_cpr_counts
+            self.old_pos_r = self.driver.right_axis.encoder.pos_cpr_counts
         
         self.fast_timer_comms_active = True
         
@@ -711,7 +719,7 @@ class ODriveNode(object):
         #rospy.loginfo("vel_l: % 2.2f  vel_r: % 2.2f  vel_l: % 2.2f  vel_r: % 2.2f  x: % 2.2f  th: % 2.2f  pos_l: % 5.1f pos_r: % 5.1f " % (
         #                vel_l, -vel_r,
         #                vel_l/encoder_cpr, vel_r/encoder_cpr, self.odom_msg.twist.twist.linear.x, self.odom_msg.twist.twist.angular.z,
-        #                self.driver.left_axis.encoder.pos_cpr, self.driver.right_axis.encoder.pos_cpr))
+        #                self.driver.left_axis.encoder.pos_cpr_counts, self.driver.right_axis.encoder.pos_cpr_counts))
         
         # Position
         delta_pos_l = self.new_pos_l - self.old_pos_l
