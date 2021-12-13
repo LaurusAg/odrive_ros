@@ -1,0 +1,3 @@
+_ Agregar un parametro de is_ready para ignorar mensajes que lleguen antes de la calibración o del engage
+(Mientras tanto, iniciar primero nodo odrive y luego el nodo de walle con la parte del odrive comentada)
+(Un workaround es que el nodo del joystick espere a que el nodo del odrive este listo para publicar)

@@ -243,7 +243,7 @@ class ODriveInterfaceAPI(object):
         for axis in self.axes:
             axis.controller.input_vel = 0
             axis.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
-            axis.controller.config.control_mode = 2 # CONTROL_MODE_VELOCITY_CONTROL
+            axis.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL
         
         #self.engaged = True
         return True
