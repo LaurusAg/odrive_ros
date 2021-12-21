@@ -397,9 +397,9 @@ class ODriveNode(object):
                         # have exceeded i2t bounds
                         return
                     
-                    if not self.driver.engaged():
-                        self.driver.engage()
-                        self.status = "engaged"
+                    # if not self.driver.engaged():
+                    #     self.driver.engage()
+                    #     self.status = "engaged"
                         
                     left_linear_val, right_linear_val = motor_command[1]
                     self.driver.drive(left_linear_val, right_linear_val)
