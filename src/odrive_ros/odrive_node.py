@@ -23,9 +23,9 @@ import math
 import traceback
 import queue
 
-from odrive_interface import ODriveInterfaceAPI, ODriveFailure
+from .odrive_interface import ODriveInterfaceAPI, ODriveFailure
 #from .odrive_interface import ChannelBrokenException, ChannelDamagedException
-from odrive_simulator import ODriveInterfaceSimulator
+from .odrive_simulator import ODriveInterfaceSimulator
 
 class ROSLogger(object):
     """Imitate a standard Python logger, but pass the messages to rospy logging.
