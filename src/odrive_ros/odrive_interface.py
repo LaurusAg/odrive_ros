@@ -92,7 +92,7 @@ class ODriveInterfaceAPI(object):
         self.connected = False
         self.right_axis = None
         self.left_axis = None
-        
+        self.logger.info('Disconnecting...')
         #self.engaged = False
         
         if not self.driver:
@@ -240,11 +240,11 @@ class ODriveInterfaceAPI(object):
             return False
 
         #self.logger.debug("Setting drive mode.")
-        for axis in self.axes:
+        for i, axis in enumerate(self.axes):
             axis.controller.input_vel = 0
-            axis.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
             axis.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL
-        
+            axis.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+
         #self.engaged = True
         return True
         
@@ -252,8 +252,9 @@ class ODriveInterfaceAPI(object):
         if not self.driver:
             self.logger.error("Not connected.")
             return False
+
         #self.logger.debug("Releasing.")
-        for axis in self.axes: 
+        for i, axis in enumerate(self.axes):
             axis.requested_state = AXIS_STATE_IDLE
 
         #self.engaged = False

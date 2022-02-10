@@ -120,8 +120,7 @@ class ODriveNode(object):
         rospy.Service('enable_odometry_updates', std_srvs.srv.SetBool, self.enable_odometry_update_service)
         
         self.status_pub = rospy.Publisher('status', std_msgs.msg.String, latch=True, queue_size=2)
-        self.status = "disconnected"
-        self.status_pub.publish(self.status)
+        self.publish_status("disconnected")
         
         self.command_queue = Queue.Queue(maxsize=5)
         self.vel_subscribe = rospy.Subscriber("/cmd_vel", Twist, self.cmd_vel_callback, queue_size=2)
@@ -213,7 +212,11 @@ class ODriveNode(object):
             jsm.name = ['joint_left_wheel','joint_right_wheel']
             jsm.position = [0.0, 0.0]            
 
-        
+    def publish_status(self, stat = ''):
+        self.status = stat
+        self.status_pub.publish(self.status)
+
+
     def main_loop(self):
         # Main control, handle startup and error handling
         # while a ROS timer will handle the high-rate (~50Hz) comms + odometry calcs
@@ -243,21 +246,18 @@ class ODriveNode(object):
                         rospy.logerr("Had errors, disconnecting and retrying connection.")
                         rospy.logerr(error_string)
                         self.driver.disconnect()
-                        self.status = "disconnected"
-                        self.status_pub.publish(self.status)
+                        self.publish_status("disconnected")
                         self.driver = None
                     else:
                         # must have called connect service from another node
                         self.fast_timer_comms_active = True
                 except (ChannelBrokenException, ChannelDamagedException, AttributeError):
                     rospy.logerr("ODrive USB connection failure in main_loop.")
-                    self.status = "disconnected"
-                    self.status_pub.publish(self.status)
+                    self.publish_status("disconnected")
                     self.driver = None
                 except:
                     rospy.logerr("Unknown errors accessing ODrive:" + traceback.format_exc())
-                    self.status = "disconnected"
-                    self.status_pub.publish(self.status)
+                    self.publish_status("disconnected")
                     self.driver = None
             
             if not self.driver:
@@ -333,8 +333,7 @@ class ODriveNode(object):
             except (ChannelBrokenException, ChannelDamagedException):
                 rospy.logerr("ODrive USB connection failure in fast_timer." + traceback.format_exc(1))
                 self.fast_timer_comms_active = False
-                self.status = "disconnected"
-                self.status_pub.publish(self.status)
+                self.publish_status("disconnected")
                 self.driver = None
             except:
                 rospy.logerr("Fast timer ODrive failure:" + traceback.format_exc())
@@ -396,10 +395,6 @@ class ODriveNode(object):
                     if self.publish_current and self.i2t_error_latch:
                         # have exceeded i2t bounds
                         return
-                    
-                    # if not self.driver.engaged():
-                    #     self.driver.engage()
-                    #     self.status = "engaged"
                         
                     left_linear_val, right_linear_val = motor_command[1]
                     self.driver.drive(left_linear_val, right_linear_val)
@@ -436,11 +431,8 @@ class ODriveNode(object):
         rospy.loginfo("Connecting to ODrive...")
         if not self.driver.connect(right_axis=self.axis_for_right):
             self.driver = None
-            #rospy.logerr("Failed to connect.")
             return (False, "Failed to connect.")
             
-        #rospy.loginfo("ODrive connected.")
-        
         # okay, connected, 
         self.m_s_to_value = self.driver.encoder_cpr/self.tyre_circumference
         
@@ -449,9 +441,7 @@ class ODriveNode(object):
             self.old_pos_r = self.driver.right_axis.encoder.pos_cpr_counts
         
         self.fast_timer_comms_active = True
-        
-        self.status = "connected"
-        self.status_pub.publish(self.status)
+        self.publish_status("connected")
         return (True, "ODrive connected successfully")
     
     def disconnect_driver(self, request):
@@ -464,8 +454,7 @@ class ODriveNode(object):
         except:
             rospy.logerr('Error while disconnecting: {}'.format(traceback.format_exc()))
         finally:
-            self.status = "disconnected"
-            self.status_pub.publish(self.status_pub)
+            self.publish_status("disconnected")
             self.driver = None
         return (True, "Disconnection success.")
     
@@ -477,11 +466,10 @@ class ODriveNode(object):
         if self.has_preroll:
             self.odometry_update_enabled = False # disable odometry updates while we preroll
             if not self.driver.preroll(wait=True):
-                self.status = "preroll_fail"
-                self.status_pub.publish(self.status)
+                self.publish_status("preroll_fail")
                 return (False, "Failed preroll.")
             
-            self.status_pub.publish("ready")
+            # self.status_pub.publish("ready")
             rospy.sleep(1)
             self.odometry_update_enabled = True
         else:
@@ -659,13 +647,13 @@ class ODriveNode(object):
         if self.left_energy_acc > self.i2t_error_threshold or self.right_energy_acc > self.i2t_error_threshold:
             if not self.i2t_error_latch:
                 self.driver.release()
-                self.status = "overheated"
+                self.publish_status("overheated")
                 self.i2t_error_latch = True
                 rospy.logerr("ODrive has exceeded i2t error threshold, ignoring drive commands. Waiting to cool down.")
         elif self.i2t_error_latch:
             if self.left_energy_acc < self.i2t_resume_threshold and self.right_energy_acc < self.i2t_resume_threshold:
                 # have cooled enough now
-                self.status = "ready"
+                self.publish_status("ready")
                 self.i2t_error_latch = False
                 rospy.logerr("ODrive has cooled below i2t resume threshold, ignoring drive commands. Waiting to cool down.")
         
