@@ -1,3 +1,4 @@
+from distutils.log import error
 import serial
 from serial.serialutil import SerialException
 
@@ -86,6 +87,8 @@ class ODriveInterfaceAPI(object):
         self._preroll_started = False
         self._preroll_completed = False
         
+        self.logger.info("Vbus %.2fV" % self.driver.vbus_voltage)
+        
         return True
         
     def disconnect(self):
@@ -137,9 +140,7 @@ class ODriveInterfaceAPI(object):
         if not self.driver:
             self.logger.error("Not connected.")
             return False
-        
-        self.logger.info("Vbus %.2fV" % self.driver.vbus_voltage)
-        
+              
         for i, axis in enumerate(self.axes):
             self.logger.info("Calibrating axis %d..." % i)
             # axis.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE
@@ -147,8 +148,10 @@ class ODriveInterfaceAPI(object):
             time.sleep(1)
             while axis.current_state != AXIS_STATE_IDLE:
                 time.sleep(0.1)
-            if axis.error != 0:
-                self.logger.error("Failed calibration with axis error 0x%x, motor error 0x%x" % (axis.error, axis.motor.error))
+            
+            errors = self.get_errors(clear = False)
+            if(errors != None):
+                self.logger.error("Failed calibration on axis %d -> %s" % (i, errors))
                 return False
                 
         return True
@@ -274,29 +277,33 @@ class ODriveInterfaceAPI(object):
         self.left_axis.watchdog_feed()
         self.right_axis.watchdog_feed()
         
-    def get_errors(self, clear=True):
+    def get_errors(self, clear=False):
         # TODO: add error parsing, see: https://github.com/madcowswe/ODrive/blob/master/tools/odrive/utils.py#L34
         if not self.driver:
             return None
             
-        axis_error = self.axes[0].error or self.axes[1].error
-        
-        if axis_error:
+        # Check for errors in each axis
+        if(self.left_axis.error | self.left_axis.motor.error | self.left_axis.encoder.error | self.left_axis.controller.error | self.right_axis.error | self.right_axis.motor.error | self.right_axis.encoder.error | self.right_axis.controller.error):
+            
             error_string = "Errors(hex): L: a%x m%x e%x c%x, R: a%x m%x e%x c%x" % (
                 self.left_axis.error,  self.left_axis.motor.error,  self.left_axis.encoder.error,  self.left_axis.controller.error,
                 self.right_axis.error, self.right_axis.motor.error, self.right_axis.encoder.error, self.right_axis.controller.error,
             )
-        
-        if clear:
-            for axis in self.axes:
-                axis.error = 0
-                axis.motor.error = 0
-                axis.encoder.error = 0
-                axis.controller.error = 0
-        
-        if axis_error:
+
+            if clear:
+                self.clear_errors()
+                    
             return error_string
-            
+        else:
+            return None
+        
+    def clear_errors(self):
+        for axis in self.axes:
+            axis.error = 0
+            axis.motor.error = 0
+            axis.encoder.error = 0
+            axis.controller.error = 0
+
     def left_vel_estimate(self):  return self.left_axis.encoder.vel_estimate   if self.left_axis  else 0 # units: encoder counts/s
     def right_vel_estimate(self): return self.right_axis.encoder.vel_estimate  if self.right_axis else 0 # neg is forward for right
     def left_pos(self):           return self.left_axis.encoder.pos_cpr_counts        if self.left_axis  else 0  # units: encoder counts

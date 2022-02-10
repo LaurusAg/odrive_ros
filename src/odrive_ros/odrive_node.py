@@ -215,11 +215,11 @@ class ODriveNode(object):
 
     
     def publish_status(self):
-        string = self.status
+        string = ''
         if(self.driver == None):
-            string += '| disconnected'
+            string += 'disconnected'
         else:
-            string += ' | connected'
+            string += 'connected'
 
             string += ' | ' + str(self.driver.bus_voltage())
             string += ' | ' + (self.driver.get_errors(clear = False) or 'no_errors')
@@ -249,6 +249,7 @@ class ODriveNode(object):
             except rospy.ROSInterruptException: # shutdown / stop ODrive??
                 break;
             
+            self.publish_status()
 
             # fast timer running, so do nothing and wait for any errors
             if self.fast_timer_comms_active:
@@ -259,13 +260,12 @@ class ODriveNode(object):
                 try:
                     # driver connected, but fast_comms not active -> must be an error?
                     # TODO: try resetting errors and recalibrating, not just a full disconnection
-                    error_string = self.driver.get_errors(clear=True)
+                    error_string = self.driver.get_errors(clear=False)
                     if error_string:
-                        rospy.logerr("Had errors, disconnecting and retrying connection.")
-                        rospy.logerr(error_string)
-                        self.driver.disconnect()
-                        self.status = "disconnected"
-                        self.driver = None
+                        rospy.logerr("Had errors. Clear errors and/or recalibrate motors to attempt to regain operation...")
+                        # self.driver.disconnect()
+                        # self.status = "disconnected"
+                        # self.driver = None
                     else:
                         # must have called connect service from another node
                         self.fast_timer_comms_active = True
@@ -300,7 +300,6 @@ class ODriveNode(object):
             else:
                 pass # loop around and try again
 
-            self.publish_status()
 
     def fast_timer(self, timer_event):
         time_now = rospy.Time.now()
@@ -321,7 +320,7 @@ class ODriveNode(object):
         if self.fast_timer_comms_active:
             try:
                 # check errors
-                error_string = self.driver.get_errors()
+                error_string = self.driver.get_errors(clear = False)
                 if error_string:
                     self.fast_timer_comms_active = False
                 else:
@@ -462,6 +461,7 @@ class ODriveNode(object):
         
         self.fast_timer_comms_active = True
         self.status = "connected"
+        self.driver.clear_errors()
         return (True, "ODrive connected successfully")
     
     def disconnect_driver(self, request):
@@ -483,6 +483,8 @@ class ODriveNode(object):
             rospy.logerr("Not connected.")
             return (False, "Not connected.")
             
+        self.driver.clear_errors()
+
         if self.has_preroll:
             self.odometry_update_enabled = False # disable odometry updates while we preroll
             if not self.driver.preroll(wait=True):

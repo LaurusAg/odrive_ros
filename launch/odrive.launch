@@ -1,11 +1,12 @@
 <!-- -*- mode: XML -*- -->
 <launch>
     <arg name="connect_on_startup"   default="true"/>
-    <arg name="calibrate_on_startup" default="true"/>
-    <arg name="engage_on_startup"    default="true"/>
+    <arg name="calibrate_on_startup" default="false"/>
+    <arg name="engage_on_startup"    default="false"/>
 
     <arg name="publish_odom"         default="true"/>
     <arg name="publish_odom_tf"      default="true"/>
+    <arg name="publish"      default="true"/>
     <arg name="odom_calc_hz"         default="100"/>
     
     <arg name="output"               default="screen"/>
