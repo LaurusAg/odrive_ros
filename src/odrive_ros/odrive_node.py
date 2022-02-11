@@ -98,7 +98,7 @@ class ODriveNode(object):
         self.has_preroll     = get_param('~use_preroll', False)
                 
         self.publish_current = get_param('~publish_current', True)
-        self.publish_raw_odom =get_param('~publish_raw_odom', True)
+        self.publish_raw_odom = get_param('~publish_raw_odom', True)
         
         self.publish_odom    = get_param('~publish_odom', True)
         self.publish_tf      = get_param('~publish_odom_tf', False)
@@ -111,14 +111,13 @@ class ODriveNode(object):
 
         rospy.Service('connect_driver',    std_srvs.srv.Trigger, self.connect_driver)
         rospy.Service('disconnect_driver', std_srvs.srv.Trigger, self.disconnect_driver)
-    
-        rospy.Service('calibrate_motors',         std_srvs.srv.Trigger, self.calibrate_motor)
-        rospy.Service('engage_motors',            std_srvs.srv.Trigger, self.engage_motor)
-        rospy.Service('release_motors',           std_srvs.srv.Trigger, self.release_motor)
+        rospy.Service('calibrate_motors',  std_srvs.srv.Trigger, self.calibrate_motor)
+        rospy.Service('engage_motors',     std_srvs.srv.Trigger, self.engage_motor)
+        rospy.Service('release_motors',    std_srvs.srv.Trigger, self.release_motor)
+        rospy.Service('enable_odometry_updates', std_srvs.srv.SetBool, self.enable_odometry_update_service)
                 
         # odometry update, disable during preroll, whenever wheels off ground 
         self.odometry_update_enabled = True
-        rospy.Service('enable_odometry_updates', std_srvs.srv.SetBool, self.enable_odometry_update_service)
         
         self.status_pub = rospy.Publisher('status', std_msgs.msg.String, latch=True, queue_size=2)
         self.status = "disconnected"
@@ -137,22 +136,21 @@ class ODriveNode(object):
             self.temperature_publisher_right = rospy.Publisher('right/temperature', Float64, queue_size=2)
         
         self.i2t_error_latch = False
+        self.last_cmd_vel_time = rospy.Time.now()
+
         if self.publish_current:
+            rospy.logdebug("ODrive will publish motor currents.")
             #self.current_loop_count = 0
             #self.left_current_accumulator  = 0.0
             #self.right_current_accumulator = 0.0
+            self.i2t_resume_threshold  = get_param('~i2t_resume_threshold',  222)            
+            self.i2t_warning_threshold = get_param('~i2t_warning_threshold', 333)
+            self.i2t_error_threshold   = get_param('~i2t_error_threshold',   666)
+
             self.current_publisher_left  = rospy.Publisher('left/current', Float64, queue_size=2)
             self.current_publisher_right = rospy.Publisher('right/current', Float64, queue_size=2)
             self.i2t_publisher_left  = rospy.Publisher('left/i2t', Float64, queue_size=2)
             self.i2t_publisher_right = rospy.Publisher('right/i2t', Float64, queue_size=2)
-            
-            rospy.logdebug("ODrive will publish motor currents.")
-            
-            self.i2t_resume_threshold  = get_param('~i2t_resume_threshold',  222)            
-            self.i2t_warning_threshold = get_param('~i2t_warning_threshold', 333)
-            self.i2t_error_threshold   = get_param('~i2t_error_threshold',   666)
-        
-        self.last_cmd_vel_time = rospy.Time.now()
         
         if self.publish_raw_odom:
             self.raw_odom_publisher_encoder_left  = rospy.Publisher('left/raw_odom/encoder',   Int32, queue_size=2) if self.publish_raw_odom else None
@@ -161,6 +159,7 @@ class ODriveNode(object):
             self.raw_odom_publisher_vel_right     = rospy.Publisher('right/raw_odom/velocity', Int32, queue_size=2) if self.publish_raw_odom else None
                             
         if self.publish_odom:
+            rospy.logdebug("ODrive will publish odometry.")
             rospy.Service('reset_odometry',    std_srvs.srv.Trigger, self.reset_odometry)
             self.old_pos_l = 0
             self.old_pos_r = 0
@@ -204,8 +203,8 @@ class ODriveNode(object):
             self.tf_msg.transform.rotation.z = 1.0
             
         if self.publish_joint_angles:
+            rospy.logdebug("ODrive will publish joint angles.")
             self.joint_state_publisher = rospy.Publisher('/odrive/joint_states', JointState, queue_size=2)
-            
             jsm = JointState()
             self.joint_state_msg = jsm
             #jsm.name.resize(2)

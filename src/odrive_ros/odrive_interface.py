@@ -285,9 +285,9 @@ class ODriveInterfaceAPI(object):
         # Check for errors in each axis
         if(self.left_axis.error | self.left_axis.motor.error | self.left_axis.encoder.error | self.left_axis.controller.error | self.right_axis.error | self.right_axis.motor.error | self.right_axis.encoder.error | self.right_axis.controller.error):
             
-            error_string = "Errors(hex): L: a%x m%x e%x c%x, R: a%x m%x e%x c%x" % (
-                self.left_axis.error,  self.left_axis.motor.error,  self.left_axis.encoder.error,  self.left_axis.controller.error,
+            error_string = "Errors(hex): R: a%x m%x e%x c%x, L: a%x m%x e%x c%x" % (
                 self.right_axis.error, self.right_axis.motor.error, self.right_axis.encoder.error, self.right_axis.controller.error,
+                self.left_axis.error,  self.left_axis.motor.error,  self.left_axis.encoder.error,  self.left_axis.controller.error,
             )
 
             if clear:
