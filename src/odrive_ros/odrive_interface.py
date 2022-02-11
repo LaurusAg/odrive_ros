@@ -298,7 +298,7 @@ class ODriveInterfaceAPI(object):
             return None
         
     def clear_errors(self):
-        for axis in self.axes:
+        for axis in [self.right_axis, self.left_axis]:
             axis.error = 0
             axis.motor.error = 0
             axis.encoder.error = 0
