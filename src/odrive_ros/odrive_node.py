@@ -109,6 +109,7 @@ class ODriveNode(object):
         
         rospy.on_shutdown(self.terminate)
 
+        rospy.Service('update_params',    std_srvs.srv.Trigger, self.update_params)
         rospy.Service('connect_driver',    std_srvs.srv.Trigger, self.connect_driver)
         rospy.Service('disconnect_driver', std_srvs.srv.Trigger, self.disconnect_driver)
         rospy.Service('calibrate_motors',  std_srvs.srv.Trigger, self.calibrate_motor)
@@ -499,6 +500,22 @@ class ODriveNode(object):
                 
         return (True, "Calibration success.")
     
+    def update_params(self, request):
+        if not self.driver:
+            rospy.logerr("Not connected.")
+            return (False, "Not connected.")
+    
+        try:
+            pos_gain = rospy.get_param("/myOdriveParam/pos_gain", 0)
+            vel_gain = rospy.get_param("/myOdriveParam/vel_gain", 200)
+            vel_int_gain = rospy.get_param("/myOdriveParam/vel_int_gain", 100)
+            self.driver.set_controller_pid(pos_gain, vel_gain, vel_int_gain)
+        except:
+            rospy.logwarn("Failed to get odrive params")
+
+        return
+
+
     def engage_motor(self, request):
         if not self.driver:
             rospy.logerr("Not connected.")

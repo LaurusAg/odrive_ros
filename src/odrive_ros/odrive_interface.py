@@ -250,6 +250,18 @@ class ODriveInterfaceAPI(object):
 
         #self.engaged = True
         return True
+
+    def set_controller_pid(self, pos_gain, vel_gain, vel_int_gain):
+        if not self.driver:
+            self.logger.error("Not connected.")
+            return False
+
+        for i, axis in enumerate(self.axes):
+            axis.controller.config.pos_gain = pos_gain
+            axis.controller.config.vel_gain = vel_gain
+            axis.controller.config.vel_int_gain = vel_int_gain
+        return True
+
         
     def release(self):
         if not self.driver:
