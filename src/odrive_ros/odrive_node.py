@@ -537,9 +537,15 @@ class ODriveNode(object):
     # Helpers and callbacks
     
     def convert(self, forward, ccw):
-        angular_to_linear = ccw * (self.wheel_track/2.0) 
-        left_linear_val  = int((forward - angular_to_linear) * self.m_s_to_value)
-        right_linear_val = int((forward + angular_to_linear) * self.m_s_to_value)
+        
+        wheel_radius = 0.25 # m. measured from walle
+        left_linear_val = (forward + ccw * self.wheel_track) / (wheel_radius * 6.283185)   # odrive receives turns/sec
+        right_linear_val = (forward - ccw * self.wheel_track) / (wheel_radius * 6.283185)
+       
+        # ORIGINAL 
+        # angular_to_linear = ccw * (self.wheel_track/2.0) 
+        # left_linear_val  = int((forward - angular_to_linear) * self.m_s_to_value)
+        # right_linear_val = int((forward + angular_to_linear) * self.m_s_to_value)
     
         return left_linear_val, right_linear_val
 
